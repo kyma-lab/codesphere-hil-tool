@@ -1,0 +1,19 @@
+# Stage 1: Base image with Python and common requirements
+FROM python:3.8 AS base
+WORKDIR /app
+COPY requirements_base.txt .
+RUN  pip install -r requirements_base.txt
+
+# Stage 2: Build stage for the worker
+FROM base AS worker-builder
+COPY requirements_worker.txt .
+RUN  pip install -r requirements_worker.txt
+RUN python -m spacy download de_core_news_sm
+
+
+# Stage 3: Final image for the worker
+FROM worker-builder AS worker
+COPY rulebased /app
+COPY worker_predict.py predict.py tool_visuals.py /app/
+ENV PYTHONUNBUFFERED=1
+CMD ["python", "worker_predict.py"]

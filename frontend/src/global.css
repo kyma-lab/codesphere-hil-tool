@@ -1,0 +1,94 @@
+.btn-arrow {
+    background-color: white;
+    color: black;
+    border: 0.1mm solid black;
+}
+
+.btn-arrow:hover {
+    background-color: #ccc;
+}
+
+
+.custom-button {
+    cursor: pointer;
+    padding: 5px;
+    background-color: #9999ff;
+    border-radius: 5px;
+    border: none;
+    color: white;
+}
+
+.custom-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.rounded {
+    border-radius: 5px;
+}
+
+.border {
+    border: 0.1mm solid black;
+}
+
+.custom-button:hover {
+    cursor: pointer;
+    background-color: #8383ff; /* Darker shade on hover */
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/Roboto/Roboto-Regular.ttf');
+    font-style: normal;
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/Roboto/Roboto-Light.ttf');
+    font-style: normal;
+    font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/Roboto/Roboto-Bold.ttf');
+    font-style: normal;
+    font-weight: 600;
+}
+
+* {
+    font-family: 'Roboto', sans-serif;
+}
+
+.w-80 {
+    width: 80%;
+}
+
+.w-99 {
+    width: 99%;
+}
+
+.h-70vh {
+    height: 70vh;
+}
+
+.h-80vh {
+    height: 80vh;
+}
+
+.h-90 {
+    height: 90%;
+}
+
+.h-90vh {
+    height: 90vh;
+}
+
+
+
+.video-player {
+    width: 40vw;
+    border: 1mm solid #9999ff;
+    border-radius: 1em;
+}

@@ -1,0 +1,141 @@
+version: '3.7'
+services:
+  mongodb_container:
+    image: mongo:latest
+    container_name: 'mongodb_hil-prod'
+    environment:
+      MONGO_INITDB_DATABASE: hil_prototype
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data_container:/data/db
+    networks:
+      - mynetwork
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq_hil-prod'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - rabbitmq_data_container:/var/lib/rabbitmq/
+        - rabbitmq_data_container:/var/log/rabbitmq
+        - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    networks:
+      - mynetwork
+    restart: on-failure
+
+  prediction-worker:
+    build:
+      context: ./backend/worker-predict-container
+      # dockerfile: Dockerfile_nogpu.worker
+      dockerfile: Dockerfile_gpu.worker
+    env_file:
+      - ./backend/development.env
+    depends_on:
+      - rabbitmq
+      - server
+    image: prediction-worker-image-prod
+    #deploy:
+      #resources:
+        #reservations:
+          #devices:
+            #- capabilities: [gpu]
+    volumes:
+      - ./backend/shared:/app/shared
+    networks:
+      - mynetwork
+    restart: on-failure
+
+  training-worker:
+    build:
+      context: ./backend/worker-train-container
+      # dockerfile: Dockerfile_nogpu.worker
+      dockerfile: Dockerfile_gpu.worker
+    env_file:
+      - ./backend/development.env
+    depends_on:
+      - rabbitmq
+      - server
+    image: training-worker-image-prod
+    #deploy:
+      #resources:
+        #reservations:
+          #devices:
+            #- capabilities: [gpu]
+    volumes:
+      - ./backend/shared:/app/shared
+    networks:
+      - mynetwork
+    restart: no
+
+  server:
+    build:
+      context: ./backend/server-container 
+      dockerfile: Dockerfile.server
+    env_file:
+      - ./backend/development.env
+    depends_on:
+      - mongodb_container
+    image: server-image-prod
+    volumes:
+      - ./backend/shared:/app/shared
+    networks:
+      - mynetwork
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - 8070:8070
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.server.entrypoints=web"
+    restart: no
+
+
+  traefik:
+    image: traefik:v2.5
+    container_name: traefik-prod
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    networks:
+      - mynetwork
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./certs:/certs"
+    restart: on-failure
+
+  svelte-app:
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    image: svelte-prod
+    ports:
+      - 3000:3000
+    networks:
+      - mynetwork
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.svelte-app.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.svelte-app.entrypoints=web"
+      - "traefik.http.routers.svelte-app.priority=1"
+    restart: no
+volumes:
+  mongodb_data_container:
+  rabbitmq_data_container:
+
+networks:
+  mynetwork:

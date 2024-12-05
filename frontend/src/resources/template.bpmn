@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_2" targetNamespace="http://design.inf.usi.ch/bpmn-sketch-miner" exporter="BPMN Sketch Miner" exporterVersion="1.17.1.3215">
+ <bpmn:collaboration id="collaboration_3">
+ <bpmn:participant id="participant_7" name="" processRef="process_6"/>
+</bpmn:collaboration>
+
+ <bpmn:process id="process_6" isExecutable="false">
+ <bpmn:laneSet id="laneSet_8">
+ <bpmn:lane id="lane_9" name="Welcome to BPMN Sketch Miner">
+ <bpmn:flowNodeRef>startEvent_10</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>endEvent_11</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_12</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>intermediateCatchEvent_13</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_14</bpmn:flowNodeRef>
+
+</bpmn:lane>
+
+</bpmn:laneSet>
+
+ <bpmn:startEvent id="startEvent_10">
+ <bpmn:outgoing>sequenceFlow_15</bpmn:outgoing>
+
+</bpmn:startEvent>
+
+ <bpmn:endEvent id="endEvent_11">
+ <bpmn:incoming>sequenceFlow_18</bpmn:incoming>
+
+</bpmn:endEvent>
+
+ <bpmn:task id="task_12" name="Draw simple BPMN
+diagrams">
+ <bpmn:incoming>sequenceFlow_15</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_16</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:intermediateCatchEvent id="intermediateCatchEvent_13" name="quickly">
+ <bpmn:timerEventDefinition/>
+ <bpmn:incoming>sequenceFlow_16</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_17</bpmn:outgoing>
+
+</bpmn:intermediateCatchEvent>
+
+ <bpmn:task id="task_14" name="as you describe them
+with STOX">
+ <bpmn:incoming>sequenceFlow_17</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_18</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:sequenceFlow id="sequenceFlow_15" sourceRef="startEvent_10" targetRef="task_12"/>
+ <bpmn:sequenceFlow id="sequenceFlow_16" sourceRef="task_12" targetRef="intermediateCatchEvent_13"/>
+ <bpmn:sequenceFlow id="sequenceFlow_17" sourceRef="intermediateCatchEvent_13" targetRef="task_14"/>
+ <bpmn:sequenceFlow id="sequenceFlow_18" sourceRef="task_14" targetRef="endEvent_11"/>
+</bpmn:process>
+
+ <bpmndi:BPMNDiagram id="BPMNDiagram_4">
+ <bpmndi:BPMNPlane id="BPMNPlane_5" bpmnElement="collaboration_3">
+ <bpmndi:BPMNShape id="participant_7_di" bpmnElement="participant_7" isHorizontal="true">
+ <dc:Bounds x="-40" y="50" width="647" height="125"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="lane_9_di" bpmnElement="lane_9" isHorizontal="true">
+ <dc:Bounds x="-40" y="50" width="647" height="125"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="startEvent_10_di" bpmnElement="startEvent_10" isHorizontal="false">
+ <dc:Bounds x="25" y="103" width="20" height="20"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="endEvent_11_di" bpmnElement="endEvent_11" isHorizontal="false">
+ <dc:Bounds x="522" y="103" width="20" height="20"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_12_di" bpmnElement="task_12" isHorizontal="false">
+ <dc:Bounds x="70" y="85" width="154" height="55"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="70" y="110" width="20" height="20"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="intermediateCatchEvent_13_di" bpmnElement="intermediateCatchEvent_13" isHorizontal="false">
+ <dc:Bounds x="264" y="103" width="20" height="20"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="250" y="129" width="51" height="19"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_14_di" bpmnElement="task_14" isHorizontal="false">
+ <dc:Bounds x="324" y="85" width="173" height="55"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="324" y="110" width="20" height="20"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_15_di" bpmnElement="sequenceFlow_15">
+ <di:waypoint x="45" y="113"/>
+ <di:waypoint x="70" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_16_di" bpmnElement="sequenceFlow_16">
+ <di:waypoint x="224" y="113"/>
+ <di:waypoint x="249" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_17_di" bpmnElement="sequenceFlow_17">
+ <di:waypoint x="299" y="113"/>
+ <di:waypoint x="324" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_18_di" bpmnElement="sequenceFlow_18">
+ <di:waypoint x="497" y="113"/>
+ <di:waypoint x="522" y="113"/>
+</bpmndi:BPMNEdge>
+
+</bpmndi:BPMNPlane>
+
+</bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

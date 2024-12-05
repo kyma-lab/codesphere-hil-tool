@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_2" targetNamespace="http://design.inf.usi.ch/bpmn-sketch-miner" exporter="BPMN Sketch Miner" exporterVersion="1.17.1.3215">
+ <bpmn:collaboration id="collaboration_3">
+ <bpmn:participant id="participant_7" name="" processRef="process_6"/>
+</bpmn:collaboration>
+
+ <bpmn:process id="process_6" isExecutable="false">
+ <bpmn:laneSet id="laneSet_8">
+ <bpmn:lane id="lane_9" name="Gesundheitsamt">
+ <bpmn:flowNodeRef>startEvent_10</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_11</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_12</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_13</bpmn:flowNodeRef>
+
+</bpmn:lane>
+
+ <bpmn:lane id="lane_17" name="Person">
+ <bpmn:flowNodeRef>task_18</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>intermediateThrowEvent_19</bpmn:flowNodeRef>
+
+</bpmn:lane>
+
+ <bpmn:lane id="lane_22" name="Mitwirkender">
+ <bpmn:flowNodeRef>endEvent_23</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>task_24</bpmn:flowNodeRef>
+
+ <bpmn:flowNodeRef>intermediateCatchEvent_25</bpmn:flowNodeRef>
+
+</bpmn:lane>
+
+</bpmn:laneSet>
+
+ <bpmn:startEvent id="startEvent_10" name="Antrag">
+ <bpmn:messageEventDefinition/>
+ <bpmn:outgoing>sequenceFlow_14</bpmn:outgoing>
+
+</bpmn:startEvent>
+
+ <bpmn:task id="task_11" name="Antrag
+entgegennehmen">
+ <bpmn:incoming>sequenceFlow_14</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_15</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:task id="task_12" name="Zustaendigkeit
+pruefen">
+ <bpmn:incoming>sequenceFlow_15</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_16</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:task id="task_13" name="Sachen machen">
+ <bpmn:incoming>sequenceFlow_16</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_20</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:sequenceFlow id="sequenceFlow_14" sourceRef="startEvent_10" targetRef="task_11"/>
+ <bpmn:sequenceFlow id="sequenceFlow_15" sourceRef="task_11" targetRef="task_12"/>
+ <bpmn:sequenceFlow id="sequenceFlow_16" sourceRef="task_12" targetRef="task_13"/>
+ <bpmn:task id="task_18" name="AndereSachen machen">
+ <bpmn:incoming>sequenceFlow_20</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_21</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:intermediateThrowEvent id="intermediateThrowEvent_19" name="Dokume">
+ <bpmn:messageEventDefinition/>
+ <bpmn:incoming>sequenceFlow_21</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_26</bpmn:outgoing>
+
+</bpmn:intermediateThrowEvent>
+
+ <bpmn:sequenceFlow id="sequenceFlow_20" sourceRef="task_13" targetRef="task_18"/>
+ <bpmn:sequenceFlow id="sequenceFlow_21" sourceRef="task_18" targetRef="intermediateThrowEvent_19"/>
+ <bpmn:endEvent id="endEvent_23">
+ <bpmn:incoming>sequenceFlow_28</bpmn:incoming>
+
+</bpmn:endEvent>
+
+ <bpmn:task id="task_24" name="NeueSachen machen">
+ <bpmn:incoming>sequenceFlow_26</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_27</bpmn:outgoing>
+
+</bpmn:task>
+
+ <bpmn:intermediateCatchEvent id="intermediateCatchEvent_25" name="Dokut">
+ <bpmn:messageEventDefinition/>
+ <bpmn:incoming>sequenceFlow_27</bpmn:incoming>
+
+ <bpmn:outgoing>sequenceFlow_28</bpmn:outgoing>
+
+</bpmn:intermediateCatchEvent>
+
+ <bpmn:sequenceFlow id="sequenceFlow_26" sourceRef="intermediateThrowEvent_19" targetRef="task_24"/>
+ <bpmn:sequenceFlow id="sequenceFlow_27" sourceRef="task_24" targetRef="intermediateCatchEvent_25"/>
+ <bpmn:sequenceFlow id="sequenceFlow_28" sourceRef="intermediateCatchEvent_25" targetRef="endEvent_23"/>
+</bpmn:process>
+
+ <bpmndi:BPMNDiagram id="BPMNDiagram_4">
+ <bpmndi:BPMNPlane id="BPMNPlane_5" bpmnElement="collaboration_3">
+ <bpmndi:BPMNShape id="participant_7_di" bpmnElement="participant_7" isHorizontal="true">
+ <dc:Bounds x="-40" y="50" width="1254" height="279"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="lane_9_di" bpmnElement="lane_9" isHorizontal="true">
+ <dc:Bounds x="-40" y="50" width="1254" height="135"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="startEvent_10_di" bpmnElement="startEvent_10" isHorizontal="false">
+ <dc:Bounds x="38" y="103" width="20" height="20"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="26" y="129" width="46" height="19"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_11_di" bpmnElement="task_11" isHorizontal="false">
+ <dc:Bounds x="96" y="85" width="145" height="55"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="96" y="110" width="20" height="20"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_12_di" bpmnElement="task_12" isHorizontal="false">
+ <dc:Bounds x="266" y="85" width="125" height="55"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="266" y="110" width="20" height="20"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_13_di" bpmnElement="task_13" isHorizontal="false">
+ <dc:Bounds x="416" y="93" width="133" height="39"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="416" y="118" width="133" height="39"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_14_di" bpmnElement="sequenceFlow_14">
+ <di:waypoint x="71" y="113"/>
+ <di:waypoint x="96" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_15_di" bpmnElement="sequenceFlow_15">
+ <di:waypoint x="241" y="113"/>
+ <di:waypoint x="266" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_16_di" bpmnElement="sequenceFlow_16">
+ <di:waypoint x="391" y="113"/>
+ <di:waypoint x="416" y="113"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNShape id="lane_17_di" bpmnElement="lane_17" isHorizontal="true">
+ <dc:Bounds x="-40" y="185" width="1254" height="144"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_18_di" bpmnElement="task_18" isHorizontal="false">
+ <dc:Bounds x="574" y="236" width="184" height="39"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="574" y="261" width="184" height="39"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="intermediateThrowEvent_19_di" bpmnElement="intermediateThrowEvent_19" isHorizontal="false">
+ <dc:Bounds x="802" y="246" width="20" height="20"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="784" y="272" width="59" height="19"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_20_di" bpmnElement="sequenceFlow_20">
+ <di:waypoint x="507" y="132"/>
+ <di:waypoint x="641" y="236"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_21_di" bpmnElement="sequenceFlow_21">
+ <di:waypoint x="758" y="256"/>
+ <di:waypoint x="783" y="256"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNShape id="lane_22_di" bpmnElement="lane_22" isHorizontal="true">
+ <dc:Bounds x="-40" y="324" width="1254" height="134"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="endEvent_23_di" bpmnElement="endEvent_23" isHorizontal="false">
+ <dc:Bounds x="1129" y="387" width="20" height="20"/>
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="task_24_di" bpmnElement="task_24" isHorizontal="false">
+ <dc:Bounds x="866" y="377" width="170" height="39"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="866" y="402" width="170" height="39"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNShape id="intermediateCatchEvent_25_di" bpmnElement="intermediateCatchEvent_25" isHorizontal="false">
+ <dc:Bounds x="1073" y="387" width="20" height="20"/>
+ <bpmndi:BPMNLabel>
+ <dc:Bounds x="1063" y="413" width="42" height="19"/>
+</bpmndi:BPMNLabel>
+
+</bpmndi:BPMNShape>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_26_di" bpmnElement="sequenceFlow_26">
+ <di:waypoint x="837" y="281"/>
+ <di:waypoint x="932" y="377"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_27_di" bpmnElement="sequenceFlow_27">
+ <di:waypoint x="1037" y="397"/>
+ <di:waypoint x="1062" y="397"/>
+</bpmndi:BPMNEdge>
+
+ <bpmndi:BPMNEdge id="sequenceFlow_28_di" bpmnElement="sequenceFlow_28">
+ <di:waypoint x="1104" y="397"/>
+ <di:waypoint x="1129" y="397"/>
+</bpmndi:BPMNEdge>
+
+</bpmndi:BPMNPlane>
+
+</bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

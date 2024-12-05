@@ -1,0 +1,9 @@
+huggingface-hub==0.25.1
+pandas==1.3.5
+flair==0.10
+pika==1.3.2
+pymongo==4.5.0
+somajo==2.2.4
+HanTa==1.1.1
+nltk==3.8.1
+transformers==4.30.2

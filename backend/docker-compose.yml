@@ -1,0 +1,101 @@
+version: '3.7'
+services:
+  mongodb_container:
+    image: mongo:latest
+    container_name: 'mongodb_hil'
+    environment:
+      MONGO_INITDB_DATABASE: hil_prototype
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb_data_container:/data/db
+    networks:
+      - mynetwork
+    restart: on-failure
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq_hil'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - rabbitmq_data_container:/var/lib/rabbitmq/
+        - rabbitmq_data_container:/var/log/rabbitmq
+        - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    networks:
+      - mynetwork
+    restart: on-failure
+
+  prediction-worker:
+    build:
+      context: ./worker-predict-container
+      dockerfile: Dockerfile_nogpu.worker
+      # dockerfile: Dockerfile_gpu.worker
+    env_file:
+      - ./.development.env
+    depends_on:
+      - rabbitmq
+      - server
+    image: prediction-worker-image
+    #deploy:
+      #resources:
+        #reservations:
+          #devices:
+           #- capabilities: [gpu]
+    volumes:
+      - ./shared:/app/shared
+    networks:
+      - mynetwork
+    restart: no
+
+
+  training-worker:
+    build:
+      context: ./worker-train-container
+      dockerfile: Dockerfile_nogpu.worker
+      # dockerfile: Dockerfile_gpu.worker
+    env_file:
+      - ./.development.env
+    depends_on:
+      - rabbitmq
+      - server
+    image: training-worker-image
+    #deploy:
+      #resources:
+        #reservations:
+          #devices:
+            #- capabilities: [gpu]
+    volumes:
+      - ./shared:/app/shared
+    networks:
+      - mynetwork
+    restart: no
+
+  server:
+    build:
+      context: ./server-container 
+      dockerfile: Dockerfile.server
+    env_file:
+      - ./.development.env
+    depends_on:
+      - mongodb_container
+    image: server-image
+    ports:
+      - 8070:8070
+    volumes:
+      - ./shared:/app/shared
+    networks:
+      - mynetwork
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
+
+volumes:
+  mongodb_data_container:
+  rabbitmq_data_container:
+
+networks:
+  mynetwork:
