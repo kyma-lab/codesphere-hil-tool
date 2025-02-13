@@ -35,7 +35,7 @@ services:
       # dockerfile: Dockerfile_nogpu.worker
       dockerfile: Dockerfile_gpu.worker
     env_file:
-      - ./backend/development.env
+      - ./backend/.development.env
     depends_on:
       - rabbitmq
       - server
@@ -57,7 +57,7 @@ services:
       # dockerfile: Dockerfile_nogpu.worker
       dockerfile: Dockerfile_gpu.worker
     env_file:
-      - ./backend/development.env
+      - ./backend/.development.env
     depends_on:
       - rabbitmq
       - server
@@ -78,7 +78,7 @@ services:
       context: ./backend/server-container 
       dockerfile: Dockerfile.server
     env_file:
-      - ./backend/development.env
+      - ./backend/.development.env
     depends_on:
       - mongodb_container
     image: server-image-prod
