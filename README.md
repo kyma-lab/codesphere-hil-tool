@@ -86,16 +86,16 @@ During developemnt, we recommed running the back-end and front-end independently
 ## Deployment
 
 The project is configured to automatically use different settings in the production environment (e.g. via the .env.production).
-The project is currently configured to run on the domain: [https://gerps.fmi.uni-jena.de/](https://gerps.fmi.uni-jena.de/)
+The project is currently configured to run on the domain: [http://127.0.0.1/](http://127.0.0.1/)
 
 For deployment, perform the following steps:
 - clone the repository
-- default admin password should be changed (in ``.production.env`` file (or `configs.py`))
-- flask jwt secret should be changed (in `.env` file or `configs.py`)
-- add pre-trained BILSTM model to the `.shared/base-models` folder
-- add pre-trained XLM-RoBERTa model to the `.shared/base-models` folder
-- if desired: enable GPU support, see `./backend/README.md`
-- run `sudo docker compose up` and watch the logs, test functionality
+- default admin password should be changed (in [`.development.env`](./backend/.development.env) file (or [`config.py`](./backend/shared/config.py)))
+- flask jwt secret should be changed (in [`.development.env.`](./backend/.development.dev) file or [`config.py`](./backend/shared/config.py))
+- add pre-trained BILSTM model to the [`.shared/base-models`](./backend/shared/base-models) folder
+- add pre-trained XLM-RoBERTa model to the [`.shared/base-models`](./backend/shared/base-models) folder
+- if desired: enable GPU support, see [`./backend/README.md`](./backend/README.md)
+- run `sudo docker compose up` and watch the logs, test functionality by accessing http://127.0.0.1/ .
 - use `-d` flag to run in background, or `sudo docker compose stop` or `sudo docker compose restart` for managing
 
 ### Production Architecture
