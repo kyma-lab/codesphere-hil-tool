@@ -4,6 +4,7 @@
 	import { login } from './login/+page.svelte';
 	import Search from '$lib/components/Search.svelte';
 	import Upload from '$lib/components/Upload.svelte';
+	import { Tooltip } from '@svelte-plugins/tooltips';
 
 	// declare variables
 	let isAuthenticated = false;
@@ -29,11 +30,15 @@
 
 			<div class="row pt-4">
 				<div class="grid-item p-3">
-					<h2>Suche</h2>
-					<div>
-						<Search />
+					<Tooltip content="Diese Funktion wird derzeit verbessert.">
+						<div class="searchbox">
+							<h2>Suche</h2>
+							<div>
+								<Search />
+							</div>
+						</div>
+					</Tooltip>
 					</div>
-				</div>
 				<div class="grid-gap" />
 				<div class="grid-item p-3">
 					<h2>Annotation</h2>
@@ -89,6 +94,11 @@
 		content: '';
 		display: table;
 		clear: both;
+	}
+
+	.searchbox {
+		pointer-events: none; 
+		opacity: 0.5;
 	}
 
 	* {
