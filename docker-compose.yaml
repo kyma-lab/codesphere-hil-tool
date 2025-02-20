@@ -71,7 +71,7 @@ services:
       - ./backend/shared:/app/shared
     networks:
       - mynetwork
-    restart: no
+    restart: "no"
 
   server:
     build:
@@ -94,7 +94,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.server.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.server.entrypoints=web"
-    restart: no
+    restart: "no"
 
 
   traefik:
@@ -132,7 +132,7 @@ services:
       - "traefik.http.routers.svelte-app.rule=PathPrefix(`/`)"
       - "traefik.http.routers.svelte-app.entrypoints=web"
       - "traefik.http.routers.svelte-app.priority=1"
-    restart: no
+    restart: "no"
 volumes:
   mongodb_data_container:
   rabbitmq_data_container:

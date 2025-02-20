@@ -49,7 +49,7 @@ services:
       - ./shared:/app/shared
     networks:
       - mynetwork
-    restart: no
+    restart: "no"
 
 
   training-worker:
@@ -72,7 +72,7 @@ services:
       - ./shared:/app/shared
     networks:
       - mynetwork
-    restart: no
+    restart: "no"
 
   server:
     build:
