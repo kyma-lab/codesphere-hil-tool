@@ -115,7 +115,7 @@
 			let res = await search_request(searchQuery, token);
 	
 			if (res.status == 200) {
-				searchResults = res.data;
+				searchResults = res.data["results"];
 				performedSearch = true;
 			} else {
 				console.error('Error:', res);
@@ -169,7 +169,7 @@
 		let res = await semantic_search_request(searchQuery, token);
 
 		if (res.status == 200) {
-			searchResults = res.data;
+			searchResults = res.data["results"];
 			performedSearch = true;
 		} else {
 			console.error('Error:', res);
@@ -571,9 +571,11 @@
 		width: 0.4em;
 	}
 
-	.outer-container {
-		margin-top: 10px; margin-right:10px; margin-left:10px;
-	}
+	.outer-container .row {
+	flex-direction: column;
+	align-items: center;   /* optional: center horizontally */
+}
+
 
 	.inner-selection-container {
 		position: sticky; top: 5vh;

@@ -34,11 +34,15 @@
 		background-color: var(--background, #fff);
 		color: var(--gray-darkest, #282828);
 		display: flex;
+		align-items: center;         /* vertically center text + icon */
 		justify-content: space-between;
 		width: 100%;
 		border: none;
 		margin: 0;
-		padding: 1em 0.5em;
+		padding: 0.6em 0.75em;        /* smaller height; better horizontal spacing */
+		font-size: 0.95rem;           /* slightly smaller text */
+		line-height: 1.2;             /* reduces overall button height */
+		cursor: pointer;
 	}
 
 	button[aria-expanded='true'] {
@@ -46,6 +50,10 @@
 	}
 
 	.plus-icon {
-		cursor: default;
+		width: 1rem;                  /* reduce icon size */
+		height: 1rem;
+		margin-left: 0.5em;
+		opacity: 0.8;                 /* softer look */
 	}
+
 </style>

@@ -96,10 +96,10 @@
 		clear: both;
 	}
 
-	.searchbox {
+	/* .searchbox {
 		pointer-events: none; 
 		opacity: 0.5;
-	}
+	} */
 
 	* {
 		box-sizing: border-box;
