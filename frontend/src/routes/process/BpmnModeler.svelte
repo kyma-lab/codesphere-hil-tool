@@ -7,17 +7,19 @@
 	import generate_bpmn from '$lib/bpmn_generator';
 	import { db_store_bpmn } from '$lib/API';
 	import { log } from '$lib/CustomLogger';
+	import AdditionalInfoBox from '$lib/components/AdditionalInfoBox.svelte';
 
 	// to get bpmn xml from parent component
 	// this is the variable holding the content that will be loaded into the modeler
 	export let childData;
 
-	
+	export let actorsTags = {};
+
 	/**
 	 * @type {import("bpmn-js/lib/Modeler").default}
 	 */
 	let modeler;
-	
+
 	let isLoading = false;
 
 	// bootstrap-alert flag
@@ -25,6 +27,76 @@
 
 	// to make it available for the toolbar (in the parent component)
 	export { downloadDiagram, clearModeler };
+
+	/**
+	 * Create ONLY BPMN pools (participants) from actorsTags.
+	 * Each actor string becomes its own participants.
+	 *
+	 * @param {import("bpmn-js/lib/Modeler").default} modeler
+	 * @param {Record<string, string[]>} actorsTags
+	 */
+	async function createAutomaticDiagram(modeler, actorsTags) {
+		const elementFactory = modeler.get('elementFactory');
+		const modeling = modeler.get('modeling');
+		const canvas = modeler.get('canvas');
+		const moddle = modeler.get('moddle');
+
+		// layout defaults
+		const startX = 150;
+		const startY = 80;
+		const poolWidth = 300;
+		const poolHeight = 180;
+		const hSpacing = 60;
+		const vSpacing = 40;
+
+		const root = canvas.getRootElement();
+
+		// Ensure Collaboration root
+		let collaboration = root;
+		if (root.type !== 'bpmn:Collaboration') {
+			collaboration = moddle.create('bpmn:Collaboration', {
+				id: `Collaboration_${Date.now()}`
+			});
+			canvas.setRootElement(collaboration);
+		}
+
+		// Flatten actors into a single list
+		const actorList = [...new Set(Object.values(actorsTags).flatMap((actors) => actors))];
+
+		console.log('actorList', actorList);
+
+		const poolsPerRow = 2;
+
+		actorList.forEach((item, index) => {
+			const col = index % poolsPerRow;
+			const row = Math.floor(index / poolsPerRow);
+
+			const x = startX + col * (poolWidth + hSpacing);
+			const y = startY + row * (poolHeight + vSpacing);
+
+			const processBO = moddle.create('bpmn:Process', {
+				id: `Process_${Date.now()}_${item.replace(/\s+/g, '_')}`,
+				isExecutable: false
+			});
+
+			const participantBO = moddle.create('bpmn:Participant', {
+				name: item,
+				processRef: processBO
+			});
+
+			const participantShape = elementFactory.createShape({
+				type: 'bpmn:Participant',
+				businessObject: participantBO
+				//  isExpanded: true
+			});
+
+			modeling.createShape(
+				participantShape,
+				{ x, y, width: poolWidth, height: poolHeight },
+				collaboration
+			);
+		});
+	}
 
 	onMount(async () => {
 		// this is a mess, but there is no proper documentation for it
@@ -42,7 +114,7 @@
 				additionalModules: [BpmnPaletteModule]
 			});
 			// can load bpmn from any other source here, as desired (e.g. from a file)
-			init(modeler, container, childData);
+			init(modeler, container, childData, actorsTags);
 			registerFileDrop(modeler, container, handleFileDrop);
 			modeler.get('canvas').zoom('fit-viewport');
 		} else {
@@ -55,13 +127,14 @@
 	 * @param {any} modeler
 	 * @param {HTMLElement} container
 	 * @param {string} diagramXML
+	 * @param {Record<string, string[]>} actorsTags
 	 */
-	async function init(modeler, container, diagramXML) {
+	async function init(modeler, container, diagramXML, actorsTags) {
 		// change this if we want to use an imported file
 		//let bpmnXML = await readLocalFile(diagramXML);
 
 		let bpmnXML = diagramXML;
-		await openDiagram(modeler, bpmnXML, container);
+		await openDiagram(modeler, bpmnXML, container, actorsTags);
 	}
 
 	/**
@@ -117,7 +190,6 @@
 		return saveBpmnToLocalStorage(modeler);
 	}
 
-
 	/**
 	 * This function creates a checkpoint of the current BPMN diagram.
 	 * The checkpoint is stored in the local storage.
@@ -132,7 +204,6 @@
 		return saveBpmnToLocalStorage(modeler);
 	}
 
-
 	/**
 	 * This function handles the drop of a file into the modeler.
 	 * It reads the file and opens the diagram with the provided XML.
@@ -146,7 +217,7 @@
 			if (file instanceof Blob) {
 				const xml = await readFileAsText(file);
 				log('bpmnmodeler', 'extracted dropped file contents, opening...');
-				await openDiagram(modeler, xml, container);
+				await openDiagram(modeler, xml, container, {});
 			} else {
 				log('bpmnmodeler', 'Error: could not read and process file contents');
 				throw new Error('ungültiger Dateityp');
@@ -192,22 +263,24 @@
 	 * @param {any} modeler
 	 * @param {string} xml
 	 * @param {HTMLElement} container
+	 * @param {Record<string, string[]>} actorsTags
 	 */
-	async function openDiagram(modeler, xml, container) {
+	async function openDiagram(modeler, xml, container, actorsTags) {
 		log('bpmnmodeler', 'Opening diagram with provided XML');
 		try {
 			await modeler.importXML(xml);
 			log('bpmnmodeler', 'BPMN diagram loaded successfully');
 			container.classList.remove('with-error');
 			container.classList.add('with-diagram');
+
+			// CALL AUTOMATIC TASK CREATION HERE
+			await createAutomaticDiagram(modeler, actorsTags);
 		} catch (err) {
 			container.classList.remove('with-diagram');
 			container.classList.add('with-error');
-
 			console.error(err);
 		}
 	}
-
 
 	/**
 	 * This function reads a file as text.
@@ -270,7 +343,6 @@
 		}
 	}
 
-
 	/**
 	 * This function downloads the current diagram as a BPMN file.
 	 * Triggered by the download button in the toolbar.
@@ -319,7 +391,7 @@
 				console.error('BPMN container not found');
 				return;
 			}
-			await openDiagram(modeler, generate_bpmn([]), container);
+			await openDiagram(modeler, generate_bpmn([]), container, {});
 			log('bpmnmodeler', 'Modeler cleared (manual canvas reset)');
 		} catch (err) {
 			console.error('Error clearing modeler:', err);
@@ -328,11 +400,9 @@
 	}
 </script>
 
-
-
 {#if isLoading}
 	<div>Loading...</div>
 {:else}
 	<!-- main content -->
-	<div id="bpmn-container" class="h-100"  style="width: inherit;"/>
+	<div id="bpmn-container" class="h-100" style="width: inherit;" />
 {/if}

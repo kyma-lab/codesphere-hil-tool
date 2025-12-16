@@ -44,6 +44,15 @@
 	 */
 	let Bedingungen;
 
+	/** actors extraction 
+	 * @type {string[]}
+	 */
+	let Hauptakteur;
+	let Mitwirkender;
+	let Ergebnisempfänger;
+
+	let actorsTags = {};
+
 	// active tab in the tab component
 	let active_tab = 'tab3';
 
@@ -80,6 +89,7 @@
 		annotated_files_container.files.forEach((/** @type {{ content: string; }} */ file) => {
 			mergedContent += '\n\n' + file.content;
 		});
+		// console.log("merge_content", mergedContent)
 		return mergedContent;
 	}
 
@@ -243,6 +253,17 @@
 		Datenfelder = extract_entities_of_type(bpmnSourceInfo, 'Datenfeld');
 		Bedingungen = extract_entities_of_type(bpmnSourceInfo, 'Bedingung');
 		Dokumente = extract_entities_of_type(bpmnSourceInfo, 'Dokument');
+		Hauptakteur = extract_entities_of_type(bpmnSourceInfo, 'Hauptakteur');
+		Mitwirkender = extract_entities_of_type(bpmnSourceInfo, 'Mitwirkender');
+		Ergebnisempfänger = extract_entities_of_type(bpmnSourceInfo, 'Ergebnisempfänger');
+
+		actorsTags = {
+			"Hauptakteur": Hauptakteur,
+			"Mitwirkender": Mitwirkender,
+			"Ergebnisempfänger": Ergebnisempfänger,
+		}
+
+		console.log("actorsTags", actorsTags)
 	}
 
 	/**
@@ -361,6 +382,7 @@
 			processIntake.set(new AnnotatedFiles([]));
 		}
 
+		console.log("bpmnSourceInfo", bpmnSourceInfo)
 		// lists of entities not incorporated into the diagram yet, used as additional information
 		extract_additional_info(bpmnSourceInfo);
 	});
@@ -422,7 +444,7 @@
 						<div class="container-fluid h-80vh">
 							<div class="w-100 h-100">
 								<div class="h-100 w-100 rounded">
-									<BpmnModeler childData={parentData} bind:this={bpmnModeler1} />
+									<BpmnModeler childData={parentData} bind:this={bpmnModeler1} actorsTags={actorsTags}/>
 								</div>
 							</div>
 						</div>
@@ -448,7 +470,7 @@
 
 								<div class="col mx-1 p-0">
 									<div class="border rounded w-100 h-100">
-										<BpmnModeler childData={parentData} bind:this={bpmnModeler2} />
+										<BpmnModeler childData={parentData} bind:this={bpmnModeler2} actorsTags={actorsTags}/>
 									</div>
 								</div>
 							</div>
