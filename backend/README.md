@@ -11,6 +11,9 @@
     - should look like this in the end: `shared/base-model/distiluse...cased-v1/pytorch_model.bin` (the other content of the zip/repo is also required)
     - 
     - [Troubleshooting: git lfs is not a git command](https://stackoverflow.com/questions/48734119/git-lfs-is-not-a-git-command-unclear)
+    - download legal norms: cd backend, `python tool_crawler.py`
+    - create vectorized norms for semantic search from backend folder: `python server-container/handlers/database/wordembedding.py`
+    - index both legal norms and vectorized norms: `python server-container/handlers/database/esearch.py` 
 - cd backend, `sudo docker-compose up` (this can take up to 20min)
 - wait for about 10 seconds, until the application is ready to be used
 - use `sudo docker-compose up --build` if you changed a file to force rebuild of containers
