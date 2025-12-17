@@ -317,3 +317,6 @@ def trainBert():
     with open(output_directory, "w") as file:
         json.dump({"norms": laws}, file, indent=2)
     file.close()
+
+if __name__ == "__main__":
+    trainBert()

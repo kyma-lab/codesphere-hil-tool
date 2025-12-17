@@ -2,53 +2,113 @@ from elasticsearch import Elasticsearch, helpers
 import json
 import ast
 
-from .querymodification import *
+from querymodification import calculateEmbeddingBert
 
-
-# this is a tool for creating the index in elasticsearch
-# functions of this are used by the server
-
-
-# Directory of vectorized laws, only required for initial indexing
-VEC_DIRECTORY = "./vectorized_norms.json"
+# Configuration
 ELASTIC_HOST = "https://elastic.simplex.fmi.uni-jena.de"
+NO_VEC_DIRECTORY = "norms_only.json"
+VEC_DIRECTORY = "vectorized_norms.json"
 
-es = None
-not_connected = True
-
-
+# Elasticsearch connection
 try:
     es = Elasticsearch(ELASTIC_HOST)
     es.info()
-    not_connected = False
+    print("Connected to Elasticsearch.")
 except Exception as e:
-    print("Could not connect to Elasticsearch.")
-    print(e)
+    es = None
+    print("Could not connect to Elasticsearch:", e)
 
 
-# not used in server, only for initial index creation
-def index_documents_bulk():
-    with open(VEC_DIRECTORY) as vec_file:
-        vecdata = json.load(vec_file)
-        counter = 0
-        actions = []
-        for doc in vecdata["norms"]:  # create action object for bulk upload
-            action = {
-                "_index": "laws_vectors",
-                "_op_type": "index",
-                "_id": counter,
-                "_source": doc,
+def delete_index(index_name: str):
+    """Delete an existing Elasticsearch index."""
+    if es and es.indices.exists(index=index_name):
+        es.indices.delete(index=index_name)
+        print(f"Index '{index_name}' deleted.")
+    else:
+        print(f"Index '{index_name}' does not exist or ES not connected.")
+
+
+def create_index(index_name: str, mapping: dict):
+    """Create an Elasticsearch index with the provided mapping."""
+    if es:
+        try:
+            es.indices.create(index=index_name, body=mapping)
+            print(f"Index '{index_name}' created.")
+        except Exception as e:
+            print(f"Index creation failed for '{index_name}':", e)
+
+
+def create_laws_no_vectors_index():
+    mapping = {
+        "settings": {"number_of_shards": 1, "number_of_replicas": 1},
+        "mappings": {
+            "properties": {
+                "jurabk": {"type": "keyword"},
+                "enbez": {"type": "text", "analyzer": "standard"},
+                "title": {"type": "text", "analyzer": "standard"},
+                "content": {"type": "text", "analyzer": "standard"},
+                "link": {"type": "keyword"},
             }
-            counter = counter + 1
-            actions.append(action)
-        res = helpers.bulk(es, actions)
+        },
+    }
+    create_index("laws_no_vectors", mapping)
 
 
-# used in submitQueryBERT
-def send_query_cosine(vector, law_index):
-    search_param = {
+def create_laws_vectors_index():
+    mapping = {
+        "mappings": {
+            "properties": {
+                "jurabk": {"type": "keyword"},
+                "enbez": {"type": "text"},
+                "title": {"type": "text"},
+                "content": {"type": "text"},
+                "link": {"type": "keyword"},
+                "vector": {"type": "dense_vector", "dims": 512, "index": True, "similarity": "cosine"},
+            }
+        }
+    }
+    create_index("laws_vectors", mapping)
+
+
+def index_documents_bulk(file_path: str, index_name: str):
+    """Bulk index documents from a JSON file."""
+    if not es:
+        print("Elasticsearch not connected.")
+        return
+
+    try:
+        with open(file_path) as f:
+            data = json.load(f)
+    except Exception as e:
+        print("Failed to load JSON:", e)
+        return
+
+    actions = [
+        {
+            "_index": index_name,
+            "_id": i,
+            "_source": doc
+        }
+        for i, doc in enumerate(data.get("norms", []))
+    ]
+
+    try:
+        success, errors = helpers.bulk(es, actions, raise_on_error=False)
+        print(f"Bulk indexed {success} documents into '{index_name}'.")
+        if errors:
+            print("Sample errors:", errors[:3])
+    except Exception as e:
+        print("Bulk indexing failed:", e)
+
+
+def send_query_cosine(vector, index_name, size=10):
+    """Search a vector index using cosine similarity."""
+    if not es:
+        return {"error": "Elasticsearch not connected"}
+
+    search_body = {
         "_source": ["jurabk", "enbez", "title", "content", "link"],
-        "size": 10,
+        "size": size,
         "query": {
             "script_score": {
                 "query": {"match_all": {}},
@@ -59,40 +119,38 @@ def send_query_cosine(vector, law_index):
             }
         },
     }
-    # Perform the search
-    res = es.search(index=law_index, body=search_param, request_timeout=30)
-    # Convert the response to a Python dictionary
-    res = ast.literal_eval(str(res))
-    return res
+    res = es.search(index=index_name, body=search_body, request_timeout=30)
+    return ast.literal_eval(str(res))
 
 
-def submitQueryTFIDF(query):
+def submit_query_tfidf(query, index_name="laws_no_vectors"):
+    """Submit a TF-IDF search query."""
+    if not es:
+        return {"error": "Elasticsearch not connected"}
 
-    if not_connected:
-        print("es error, not connected")
-        return {"error": "Elasticsearch connection error"}
-
-    search_param = {
+    search_body = {
         "_source": ["jurabk", "enbez", "title", "content", "link"],
         "size": 10,
         "query": {"query_string": {"query": query, "default_field": "content"}},
     }
-    # Perform the search
-    # TODO: Add index name from elasticsearch
-    res = es.search(index="laws_no_vectors", body=search_param)
-    # Convert the response to a Python dictionary
-    res = ast.literal_eval(str(res))
-    return res
+    res = es.search(index=index_name, body=search_body)
+    return ast.literal_eval(str(res))
 
 
-def submitQueryBERT(query):
+def submit_query_bert(query, index_name="laws_vectors"):
+    """Submit a semantic search query using BERT embeddings."""
+    if not es:
+        return {"error": "Elasticsearch not connected"}
 
-    if not_connected:
-        print("es error, not connected")
-        return {"error": "Elasticsearch connection error"}
-
-    law_index = "laws_vectors"  # TODO: Add index name from elasticsearch
     vector = calculateEmbeddingBert(query)
-    print(vector)
-    res = send_query_cosine(vector, law_index)
-    return res
+    return send_query_cosine(vector, index_name)
+
+
+if __name__ == "__main__":
+    # Example usage
+    delete_index("laws_no_vectors")
+    delete_index("laws_vectors")
+    create_laws_no_vectors_index()
+    create_laws_vectors_index()
+    index_documents_bulk(NO_VEC_DIRECTORY, "laws_no_vectors")
+    index_documents_bulk(VEC_DIRECTORY, "laws_vectors")

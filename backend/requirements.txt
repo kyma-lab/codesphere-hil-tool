@@ -1,4 +1,5 @@
 flask==2.2.5
+numpy==1.21.6
 pandas==1.3.5
 flair==0.10
 pika==1.3.2
@@ -11,4 +12,8 @@ elasticsearch==8.11.1
 pytesseract==0.3.10
 HanTa==1.1.1
 nltk==3.8.1
+sentencepiece==0.1.95
 sentence_transformers==2.2.2
+transformers==4.26.1
+huggingface-hub==0.13.4
+gensim==4.3.3
