@@ -2,10 +2,10 @@ from elasticsearch import Elasticsearch, helpers
 import json
 import ast
 
-from querymodification import calculateEmbeddingBert
+from .querymodification import *
 
 # Configuration
-ELASTIC_HOST = "https://elastic.simplex.fmi.uni-jena.de"
+ELASTIC_HOST = "https://elasticlaw.simplex.fmi.uni-jena.de"
 NO_VEC_DIRECTORY = "norms_only.json"
 VEC_DIRECTORY = "vectorized_norms.json"
 
@@ -123,7 +123,7 @@ def send_query_cosine(vector, index_name, size=10):
     return ast.literal_eval(str(res))
 
 
-def submit_query_tfidf(query, index_name="laws_no_vectors"):
+def submitQueryTFIDF(query, index_name="laws_no_vectors"):
     """Submit a TF-IDF search query."""
     if not es:
         return {"error": "Elasticsearch not connected"}
@@ -137,7 +137,7 @@ def submit_query_tfidf(query, index_name="laws_no_vectors"):
     return ast.literal_eval(str(res))
 
 
-def submit_query_bert(query, index_name="laws_vectors"):
+def submitQueryBERT(query, index_name="laws_vectors"):
     """Submit a semantic search query using BERT embeddings."""
     if not es:
         return {"error": "Elasticsearch not connected"}
