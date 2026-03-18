@@ -71,10 +71,13 @@ During developemnt, we recommed running the back-end and front-end independently
     - expected folder name per default is `bilstm-crf`, so it looks like this in the end: `shared/base-models/bilstm-crf/final-model.pt` (the other content of the zip is also required)
     - download trained bilstm-crf model from here: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14213139.svg)](https://doi.org/10.5281/zenodo.14213139)
     - optional: also download the trained xmlr model from link above (zenodo), put in `shared/base-models/xlm-roberta-large/final-model.pt`
-- optional: put model for semantic search in base-folder (disabled for now)
+- optional: put model for semantic search in base-folder
     - clone [this](https://huggingface.co/sentence-transformers/distiluse-base-multilingual-cased-v1/) repo with git lfs
     - it should look like this in the end: `shared/base-model/distiluse...cased-v1/pytorch_model.bin` (the other content of the zip/repo is also required) 
     - [troubleshooting: git-lfs-is-not-a-git-command-unclear](https://stackoverflow.com/questions/48734119/git-lfs-is-not-a-git-command-unclear)
+    - download legal norms: cd backend, `python tool_crawler.py`
+    - create vectorized norms for semantic search from backend folder: `python server-container/handlers/database/wordembedding.py`
+    - index both legal norms and vectorized norms: `python server-container/handlers/database/esearch.py` 
 - Run `sudo docker compose up --build` in the `backend` folder to re-build the docker images and start the containers.
 - Some fairly recent version of node is required (v23.2.0 works). I recommend using `nvm`. For installation see [here](https://nodejs.org/en/download/package-manager)
 - Run `npm i` in the `frontend` folder to install the required node packages.
