@@ -4,7 +4,7 @@
 - clone this repository
 - put trained model into `./shared/base-models` folder
     - expected folder name per default is `bilstm-crf`, so it looks like this in the end: `shared/base-models/bilstm-crf/final-model.pt` (the other content of the zip is also required)
-    - option 1: download [here](https://cloud.uni-jena.de/s/e7mjtfZ2C94YbpT) using `wget https://cloud.uni-jena.de/s/e7mjtfZ2C94YbpT/download/bilstm-crf.zip`
+    - option 1: download [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14213139.svg)](https://doi.org/10.5281/zenodo.14213139)
 - put model for semantic search in base-folder
     - option 1: direct model download [here](https://mega.nz/file/BNIUwQDL#JjezCmjy5yTj4FLTVwQLskebMj2izcdkg0ksOon-FaA) (nextcloud always failed)
     - option 2: clone [this](https://huggingface.co/sentence-transformers/distiluse-base-multilingual-cased-v1/) repo with git lfs
