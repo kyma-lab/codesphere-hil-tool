@@ -38,7 +38,9 @@ run:
     image: mongo:7
     plan: 301
     replicas: 1
-    healthEndpoint: tcp://localhost:27017
+    # Mongo has no HTTP health endpoint. Codesphere docs only show HTTP probes
+    # in WS 160 — leaving this unset and observing whether the pod gets dropped.
+    # If TCP is CLOSED from server logs, add a sidecar or steps-based HTTP probe.
     network:
       ports:
         - port: 27017
@@ -56,7 +58,8 @@ run:
     image: rabbitmq:3-management-alpine
     plan: 301
     replicas: 1
-    healthEndpoint: tcp://localhost:5672
+    # Management plugin runs on 15672 (HTTP); AMQP on 5672 (TCP).
+    healthEndpoint: http://localhost:15672/
     network:
       ports:
         - port: 5672
@@ -137,7 +140,8 @@ run:
     image: python:3.8
     plan: 401
     replicas: 1
-    healthEndpoint: tcp://localhost:1
+    # Workers are not network-facing; no HTTP endpoint exists.
+    # Skipping healthEndpoint; if Codesphere drops the pod, add a tiny HTTP probe.
     volumeMounts:
       - name: _workspace
         mountPath: /app
@@ -169,7 +173,8 @@ run:
     image: python:3.8
     plan: 401
     replicas: 1
-    healthEndpoint: tcp://localhost:1
+    # Workers are not network-facing; no HTTP endpoint exists.
+    # Skipping healthEndpoint; if Codesphere drops the pod, add a tiny HTTP probe.
     volumeMounts:
       - name: _workspace
         mountPath: /app
