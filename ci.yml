@@ -53,6 +53,7 @@ run:
     image: mongo:7
     plan: 301
     replicas: 1
+    healthEndpoint: http://localhost:28017
     volumeMounts:
       - name: _workspace
         mountPath: /data/db
@@ -61,6 +62,22 @@ run:
       MONGO_INITDB_DATABASE: hil_prototype
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: ${{ vault.MONGO_PWD }}
+    steps:
+      - name: Start mongod with HTTP health sidecar
+        command: |
+          set -e
+          # Install socat as a tiny HTTP shim that returns 200 only when mongod accepts TCP on 27017
+          apt-get update -qq
+          apt-get install -y --no-install-recommends socat
+          # Sidecar: on each connect, probe Mongo's TCP port; reply 200 if open, 503 if not
+          ( socat TCP-LISTEN:28017,fork,reuseaddr SYSTEM:'\
+            if exec 3<>/dev/tcp/127.0.0.1/27017 2>/dev/null; then exec 3<&-; \
+              printf "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"; \
+            else \
+              printf "HTTP/1.1 503 NotReady\r\nContent-Length: 8\r\n\r\nnotready"; \
+            fi' ) &
+          # Hand off to mongo's official entrypoint (handles MONGO_INITDB_* on first run)
+          exec docker-entrypoint.sh mongod --bind_ip_all
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -143,6 +160,7 @@ run:
     image: python:3.8
     plan: 401
     replicas: 1
+    healthEndpoint: http://localhost:8080
     volumeMounts:
       - name: _workspace
         mountPath: /app
@@ -165,15 +183,19 @@ run:
           pip install --no-cache-dir -r requirements_base.txt
           pip install --no-cache-dir -r requirements_worker.txt
           python -m spacy download de_core_news_sm
-      - name: Start prediction worker
+      - name: Start prediction worker with HTTP health sidecar
         command: |
+          # Background HTTP server on 8080 so Codesphere sees the pod as healthy
+          mkdir -p /tmp/health && echo ok > /tmp/health/index.html
+          ( cd /tmp/health && python -m http.server 8080 >/dev/null 2>&1 ) &
           cd /app/backend/worker-predict-container
-          PYTHONPATH=/app/backend:/app/backend/worker-predict-container python worker_predict.py
+          PYTHONPATH=/app/backend:/app/backend/worker-predict-container exec python worker_predict.py
 
   training-worker:
     image: python:3.8
     plan: 401
     replicas: 1
+    healthEndpoint: http://localhost:8080
     volumeMounts:
       - name: _workspace
         mountPath: /app
@@ -194,10 +216,12 @@ run:
           cd /app/backend/worker-train-container
           pip install --no-cache-dir -r requirements_base.txt
           pip install --no-cache-dir -r requirements_worker.txt
-      - name: Start training worker
+      - name: Start training worker with HTTP health sidecar
         command: |
+          mkdir -p /tmp/health && echo ok > /tmp/health/index.html
+          ( cd /tmp/health && python -m http.server 8080 >/dev/null 2>&1 ) &
           cd /app/backend/worker-train-container
-          PYTHONPATH=/app/backend:/app/backend/worker-train-container python worker_train.py
+          PYTHONPATH=/app/backend:/app/backend/worker-train-container exec python worker_train.py
 
   frontend:
     image: node:20
