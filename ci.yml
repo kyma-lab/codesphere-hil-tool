@@ -17,17 +17,33 @@ prepare:
         set -euo pipefail
         MODELS_DIR=backend/shared/base-models
         mkdir -p "$MODELS_DIR"
-        if [ ! -f "$MODELS_DIR/bilstm-crf/final-model.pt" ]; then
-          echo "Downloading BiLSTM-CRF model from Zenodo (DOI 10.5281/zenodo.14213139)..."
-          cd "$MODELS_DIR"
-          curl -fsSL "https://zenodo.org/records/14213139/files/bilstm-crf.zip" -o bilstm-crf.zip || {
-            echo "WARN: Zenodo download failed — model must be populated manually." >&2
-            exit 0
-          }
-          unzip -o bilstm-crf.zip && rm -f bilstm-crf.zip
-        else
+        if [ -f "$MODELS_DIR/bilstm-crf/final-model.pt" ]; then
           echo "BiLSTM-CRF model already present, skipping."
+          exit 0
         fi
+        echo "Downloading bilstm_crf_trained.zip from Zenodo (DOI 10.5281/zenodo.14213139, ~2.7 GB)..."
+        cd "$MODELS_DIR"
+        curl -fL --retry 5 --retry-delay 10 --retry-all-errors \
+          -o bilstm_crf_trained.zip \
+          "https://zenodo.org/records/14213139/files/bilstm_crf_trained.zip" || {
+          echo "WARN: Zenodo download failed after retries — model must be populated manually under $MODELS_DIR/bilstm-crf/" >&2
+          exit 0
+        }
+        echo "Unzipping..."
+        unzip -o -q bilstm_crf_trained.zip
+        rm -f bilstm_crf_trained.zip
+        # zip may extract to a different folder name; locate final-model.pt and normalise to bilstm-crf/
+        MODEL_DIR=$(find . -maxdepth 3 -name "final-model.pt" -exec dirname {} \; | head -1)
+        if [ -z "$MODEL_DIR" ]; then
+          echo "ERROR: final-model.pt not found after extraction" >&2
+          exit 1
+        fi
+        if [ "$MODEL_DIR" != "./bilstm-crf" ]; then
+          rm -rf bilstm-crf
+          mv "$MODEL_DIR" bilstm-crf
+        fi
+        echo "BiLSTM-CRF model placed at $MODELS_DIR/bilstm-crf/"
+        ls -la bilstm-crf/ | head -10
 
 test:
   steps: []
