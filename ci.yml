@@ -5,9 +5,10 @@ schemaVersion: v0.2
 # server, prediction-worker, training-worker, frontend
 #
 # Dev-Domain-Routing per network.paths:
-#   /api   -> server
-#   /      -> frontend
-# Interne Services (mongo, rabbit, elastic) ohne isPublic.
+#   /api -> server
+#   /    -> frontend
+# Interne Services (mongo, rabbit, elastic) haben keinen network-Block
+# (Mealie-WS-160-Muster: nur public Services listen network.ports).
 
 prepare:
   steps:
@@ -19,10 +20,8 @@ prepare:
         if [ ! -f "$MODELS_DIR/bilstm-crf/final-model.pt" ]; then
           echo "Downloading BiLSTM-CRF model from Zenodo (DOI 10.5281/zenodo.14213139)..."
           cd "$MODELS_DIR"
-          # Zenodo record page lists the exact filename; if download fails,
-          # populate manually via cs exec.
           curl -fsSL "https://zenodo.org/records/14213139/files/bilstm-crf.zip" -o bilstm-crf.zip || {
-            echo "WARN: Zenodo download failed — service can still start, ML annotations will be unavailable until /home/user/app/backend/shared/base-models/bilstm-crf/final-model.pt is populated manually." >&2
+            echo "WARN: Zenodo download failed — model must be populated manually." >&2
             exit 0
           }
           unzip -o bilstm-crf.zip && rm -f bilstm-crf.zip
@@ -38,13 +37,6 @@ run:
     image: mongo:7
     plan: 301
     replicas: 1
-    # Mongo has no HTTP health endpoint. Codesphere docs only show HTTP probes
-    # in WS 160 — leaving this unset and observing whether the pod gets dropped.
-    # If TCP is CLOSED from server logs, add a sidecar or steps-based HTTP probe.
-    network:
-      ports:
-        - port: 27017
-          isPublic: false
     volumeMounts:
       - name: _workspace
         mountPath: /data/db
@@ -58,12 +50,7 @@ run:
     image: rabbitmq:3-management-alpine
     plan: 301
     replicas: 1
-    # Management plugin runs on 15672 (HTTP); AMQP on 5672 (TCP).
-    healthEndpoint: http://localhost:15672/
-    network:
-      ports:
-        - port: 5672
-          isPublic: false
+    healthEndpoint: http://localhost:15672
     volumeMounts:
       - name: _workspace
         mountPath: /var/lib/rabbitmq
@@ -74,18 +61,20 @@ run:
     plan: 301
     replicas: 1
     healthEndpoint: http://localhost:9200/_cluster/health
-    network:
-      ports:
-        - port: 9200
-          isPublic: false
     volumeMounts:
       - name: _workspace
         mountPath: /usr/share/elasticsearch/data
         workspacePath: elastic-data
     env:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
+      ES_DISCOVERY_TYPE: single-node
+      ES_XPACK_SECURITY_ENABLED: "false"
       ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    steps:
+      - name: Translate ES_* env to elasticsearch config
+        command: |
+          export discovery.type="$ES_DISCOVERY_TYPE"
+          export xpack.security.enabled="$ES_XPACK_SECURITY_ENABLED"
+          exec /usr/local/bin/docker-entrypoint.sh elasticsearch
 
   server:
     image: python:3.8
@@ -102,7 +91,7 @@ run:
     volumeMounts:
       - name: _workspace
         mountPath: /app
-        workspacePath: ""
+        workspacePath: .
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -131,21 +120,17 @@ run:
           pip install --no-cache-dir gunicorn
       - name: Start gunicorn
         command: |
-          cd /app/backend
-          # server.py expects to import handlers/ relative to server-container/
-          cd server-container
+          cd /app/backend/server-container
           PYTHONPATH=/app/backend:/app/backend/server-container gunicorn --workers 4 --threads 2 -b 0.0.0.0:8070 server:app
 
   prediction-worker:
     image: python:3.8
     plan: 401
     replicas: 1
-    # Workers are not network-facing; no HTTP endpoint exists.
-    # Skipping healthEndpoint; if Codesphere drops the pod, add a tiny HTTP probe.
     volumeMounts:
       - name: _workspace
         mountPath: /app
-        workspacePath: ""
+        workspacePath: .
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -173,12 +158,10 @@ run:
     image: python:3.8
     plan: 401
     replicas: 1
-    # Workers are not network-facing; no HTTP endpoint exists.
-    # Skipping healthEndpoint; if Codesphere drops the pod, add a tiny HTTP probe.
     volumeMounts:
       - name: _workspace
         mountPath: /app
-        workspacePath: ""
+        workspacePath: .
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -215,10 +198,8 @@ run:
     volumeMounts:
       - name: _workspace
         mountPath: /app
-        workspacePath: ""
+        workspacePath: .
     env:
-      # Empty -> apiUrl is relative -> calls go through Codesphere router
-      # to /api which routes to the server service.
       VITE_SERVER_HOST_LOCATION: ""
       NODE_ENV: production
       HOST: 0.0.0.0
