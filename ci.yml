@@ -1,14 +1,24 @@
 schemaVersion: v0.2
 
 # HIL-Tool (gitlab.opencode.de/opendva/hil-tool) auf Codesphere
-# 7 Services in einem Workspace: mongodb, rabbitmq, elasticsearch,
-# server, prediction-worker, training-worker, frontend
+# 7 Services in einem Workspace.
+#
+# Pre-built application images aus ghcr.io/kyma-lab/* (public):
+#   - server (Flask + gunicorn auf 8070, Code im Image)
+#   - prediction-worker (Python ML-Inference)
+#   - training-worker (Python ML-Training)
+#   - svelte-app (SvelteKit auf 3000, Build im Image)
+# Drittanbieter-Images für stateful services:
+#   - mongo:7, rabbitmq:3-management-alpine, elasticsearch:8.13.4
 #
 # Dev-Domain-Routing per network.paths:
 #   /api -> server
-#   /    -> frontend
-# Interne Services (mongo, rabbit, elastic) haben keinen network-Block
-# (Mealie-WS-160-Muster: nur public Services listen network.ports).
+#   /    -> frontend (svelte-app)
+# Interne Services ohne network-Block (Service-DNS reicht).
+#
+# Volumes:
+#   - mongo-data, rabbitmq-data, elastic-data → Persistenz im Workspace-FS
+#   - backend/shared → in server + workers gemountet (für ML-Modelle aus prepare)
 
 prepare:
   steps:
@@ -32,7 +42,6 @@ prepare:
         echo "Unzipping..."
         unzip -o -q bilstm_crf_trained.zip
         rm -f bilstm_crf_trained.zip
-        # zip may extract to a different folder name; locate final-model.pt and normalise to bilstm-crf/
         MODEL_DIR=$(find . -maxdepth 3 -name "final-model.pt" -exec dirname {} \; | head -1)
         if [ -z "$MODEL_DIR" ]; then
           echo "ERROR: final-model.pt not found after extraction" >&2
@@ -66,17 +75,14 @@ run:
       - name: Start mongod with HTTP health sidecar
         command: |
           set -e
-          # Install socat as a tiny HTTP shim that returns 200 only when mongod accepts TCP on 27017
           apt-get update -qq
           apt-get install -y --no-install-recommends socat
-          # Sidecar: on each connect, probe Mongo's TCP port; reply 200 if open, 503 if not
           ( socat TCP-LISTEN:28017,fork,reuseaddr SYSTEM:'\
             if exec 3<>/dev/tcp/127.0.0.1/27017 2>/dev/null; then exec 3<&-; \
               printf "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"; \
             else \
               printf "HTTP/1.1 503 NotReady\r\nContent-Length: 8\r\n\r\nnotready"; \
             fi' ) &
-          # Hand off to mongo's official entrypoint (handles MONGO_INITDB_* on first run)
           exec docker-entrypoint.sh mongod --bind_ip_all
 
   rabbitmq:
@@ -110,7 +116,7 @@ run:
           exec /usr/local/bin/docker-entrypoint.sh elasticsearch
 
   server:
-    image: python:3.8
+    image: ghcr.io/kyma-lab/server:latest
     plan: 301
     replicas: 1
     healthEndpoint: http://localhost:8070/api/health
@@ -121,10 +127,12 @@ run:
       paths:
         - port: 8070
           path: /api
+    # Mount only shared/ so the ML model from prepare lands inside the container.
+    # Code lives in /app/ inside the image and stays untouched.
     volumeMounts:
       - name: _workspace
-        mountPath: /app
-        workspacePath: .
+        mountPath: /app/shared
+        workspacePath: backend/shared
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -138,33 +146,20 @@ run:
       ALLOW_CORS: "True"
       DISABLE_TRAINING: "True"
       TESTING: "False"
-      BASE_MODELS_PATH: /app/backend/shared/base-models
-      USER_DATA_PATH: /app/backend/shared
-      BASE_TMP_PATH: /app/backend/shared/tmp
-    steps:
-      - name: Install system deps and python packages
-        command: |
-          set -euo pipefail
-          apt-get update
-          apt-get install -y --no-install-recommends tesseract-ocr-deu poppler-utils
-          cd /app/backend/server-container
-          pip install --no-cache-dir -r requirements_base.txt
-          pip install --no-cache-dir -r requirements_server.txt
-          pip install --no-cache-dir gunicorn
-      - name: Start gunicorn
-        command: |
-          cd /app/backend/server-container
-          PYTHONPATH=/app/backend:/app/backend/server-container gunicorn --workers 4 --threads 2 -b 0.0.0.0:8070 server:app
+      BASE_MODELS_PATH: /app/shared/base-models
+      USER_DATA_PATH: /app/shared
+      BASE_TMP_PATH: /app/shared/tmp
+    # No steps: image's CMD (cron && gunicorn ... server:app) runs.
 
   prediction-worker:
-    image: python:3.8
+    image: ghcr.io/kyma-lab/prediction-worker:latest
     plan: 401
     replicas: 1
     healthEndpoint: http://localhost:8080
     volumeMounts:
       - name: _workspace
-        mountPath: /app
-        workspacePath: .
+        mountPath: /app/shared
+        workspacePath: backend/shared
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -172,34 +167,26 @@ run:
       MONGO_PWD: ${{ vault.MONGO_PWD }}
       RABBITMQ_HOST: rabbitmq
       ELASTIC_HOST: http://elasticsearch:9200
-      BASE_MODELS_PATH: /app/backend/shared/base-models
-      USER_DATA_PATH: /app/backend/shared
-      BASE_TMP_PATH: /app/backend/shared/tmp
+      BASE_MODELS_PATH: /app/shared/base-models
+      USER_DATA_PATH: /app/shared
+      BASE_TMP_PATH: /app/shared/tmp
     steps:
-      - name: Install python packages
-        command: |
-          set -euo pipefail
-          cd /app/backend/worker-predict-container
-          pip install --no-cache-dir -r requirements_base.txt
-          pip install --no-cache-dir -r requirements_worker.txt
-          python -m spacy download de_core_news_sm
       - name: Start prediction worker with HTTP health sidecar
         command: |
-          # Background HTTP server on 8080 so Codesphere sees the pod as healthy
           mkdir -p /tmp/health && echo ok > /tmp/health/index.html
           ( cd /tmp/health && python -m http.server 8080 >/dev/null 2>&1 ) &
-          cd /app/backend/worker-predict-container
-          PYTHONPATH=/app/backend:/app/backend/worker-predict-container exec python worker_predict.py
+          cd /app
+          exec python worker_predict.py
 
   training-worker:
-    image: python:3.8
+    image: ghcr.io/kyma-lab/training-worker:latest
     plan: 401
     replicas: 1
     healthEndpoint: http://localhost:8080
     volumeMounts:
       - name: _workspace
-        mountPath: /app
-        workspacePath: .
+        mountPath: /app/shared
+        workspacePath: backend/shared
     env:
       PYTHONUNBUFFERED: "1"
       MONGO_HOST: mongodb
@@ -207,24 +194,18 @@ run:
       MONGO_PWD: ${{ vault.MONGO_PWD }}
       RABBITMQ_HOST: rabbitmq
       DISABLE_TRAINING: "True"
-      BASE_MODELS_PATH: /app/backend/shared/base-models
-      USER_DATA_PATH: /app/backend/shared
+      BASE_MODELS_PATH: /app/shared/base-models
+      USER_DATA_PATH: /app/shared
     steps:
-      - name: Install python packages
-        command: |
-          set -euo pipefail
-          cd /app/backend/worker-train-container
-          pip install --no-cache-dir -r requirements_base.txt
-          pip install --no-cache-dir -r requirements_worker.txt
       - name: Start training worker with HTTP health sidecar
         command: |
           mkdir -p /tmp/health && echo ok > /tmp/health/index.html
           ( cd /tmp/health && python -m http.server 8080 >/dev/null 2>&1 ) &
-          cd /app/backend/worker-train-container
-          PYTHONPATH=/app/backend:/app/backend/worker-train-container exec python worker_train.py
+          cd /app
+          exec python worker_train.py
 
   frontend:
-    image: node:20
+    image: ghcr.io/kyma-lab/svelte-app:latest
     plan: 101
     replicas: 1
     healthEndpoint: http://localhost:3000/
@@ -235,24 +216,12 @@ run:
       paths:
         - port: 3000
           path: /
-    volumeMounts:
-      - name: _workspace
-        mountPath: /app
-        workspacePath: .
     env:
-      VITE_SERVER_HOST_LOCATION: ""
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3000"
       ORIGIN: "https://${{ workspace.id }}-3000.1.csa.codesphere-demo.com"
-    steps:
-      - name: Install and build
-        command: |
-          set -euo pipefail
-          cd /app/frontend
-          npm ci
-          VITE_SERVER_HOST_LOCATION="" npm run build
-      - name: Start svelte node server
-        command: |
-          cd /app/frontend
-          node build/index.js
+    # No steps: image's CMD (node build/index.js) runs.
+    # NB: VITE_SERVER_HOST_LOCATION was baked at build time. If the frontend
+    # cannot reach /api, the build needs to be redone with VITE_SERVER_HOST_LOCATION=""
+    # (so apiUrl is relative and goes through Codesphere routing to /api).
